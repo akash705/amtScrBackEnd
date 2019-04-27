@@ -31,7 +31,7 @@ app.use((req,res,next)=>{
 })
 app.all('/',(req,res)=>{return res.send({status:true,message:'Hey There all , Api has been setup'});})
 
-app.post('/signUp',(req,res)=>{
+app.post('/signUp',async (req,res)=>{
     
         if(req.body){
             if(!trimAndCheck(req.body.name))
@@ -40,7 +40,14 @@ app.post('/signUp',(req,res)=>{
                 return res.send({status:false,error:'Email is required'});
             if(!trimAndCheck(req.body.password))
                 return res.send({status:false,error:'Password is required'});
+            {
+                // checking whether user exists or not 
+                let data = await usermodel.findOne({email:req.body.email.trim().toLowerCase()});
+                if(data && data.email){
+                        return res.send({status:false,error:"User Already Exists"});
+                }
 
+            }
 
             let useData = new usermodel({name:req.body.name.trim(),email:req.body.email.trim().toLowerCase(),uid:uid.v1(),password:req.body.password.trim()});
             useData.save().then(data=>{
@@ -66,20 +73,13 @@ app.post('/login',async (req,res)=>{
     
     userData.data.generateAuthToken().then(token=>{
         if(token){
-            return res.send({status:true,uid:userData.data.uid, authToken:token});
+            return res.send({status:true,uid:userData.data.uid, authtoken:token});
         }else{
-            console.log('inside error',token);
             return res.send({status:false,error:"Unable to generate Auth Token"});
         }
     }).catch(error=>{
-        console.log(error);
         return res.send({status:false,error:"Unable to generate Auth Token"});
-    })
-
-
-
-    
-
+    });
     // .then(data=>{
     //     if(data){
     //         res.send({status:true,uuid:data.uid});
@@ -92,12 +92,13 @@ app.post('/login',async (req,res)=>{
 });
 
 app.post('/logout',async (req,res)=>{
-    let token = request.headers.auth;
+    let token = req.headers.authtoken;
+    if(!token) return res.send({status:false,error:"Invalid Token"});
     jwt.verify(token , secret,async (error, result) =>{
         //getting token email 
         if(error || (result===undefined)) {
             console.log('logout error', error);
-            return response('error');
+            return res.send({status:false,error:'Invalid Token'});
         }
         let id = result.id;
 
@@ -110,17 +111,35 @@ app.post('/logout',async (req,res)=>{
             $pull: {tokens: {token: token}}
         };
 
-        let update = await usermodel.update({email:id},myjson).then(data=>{
-            if(data)return {status:true,data:data};
-            else return {status:false,error:"Invalid Request"};
-        }).catch(data=>({status:false,error:"Server Error Check logs"}));
+        usermodel.updateOne({
+                email: id
+            }, myjson).then(data => {
+                if (data && data.nModified===1) {
+                    return res.send({
+                        status: true,
+                        data: data
+                    });
+                }
+                else{
+                    return res.send({
+                        status: false,
+                        error: "Invalid Request"
+                    });
+                }
+            })
+            .catch(data => {
+                return res.send({
+                    status: false,
+                    error: "Server Error Check logs"
+                });
+            });
         // logs handling incase of server error
 
 
-        if(!update|| !update.status)
-            return {status:false,error:"Unable To logout User"}
+        // if(!update|| !update.status)
+        //     return {status:false,error:"Unable To logout User"}
         
-        return {status:true,data:"Logout"};
+        // return {status:true,data:"Logout"};
 
     })
 })
