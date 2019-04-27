@@ -80,15 +80,6 @@ app.post('/login',async (req,res)=>{
     }).catch(error=>{
         return res.send({status:false,error:"Unable to generate Auth Token"});
     });
-    // .then(data=>{
-    //     if(data){
-    //         res.send({status:true,uuid:data.uid});
-    //     }else{
-    //         res.send({status:false,error:'User Not found'});
-    //     }
-    // }).catch(data=>{
-    //     res.send({status:false,error:'Exception '});
-    // })
 });
 
 app.post('/logout',async (req,res)=>{
@@ -134,13 +125,6 @@ app.post('/logout',async (req,res)=>{
                 });
             });
         // logs handling incase of server error
-
-
-        // if(!update|| !update.status)
-        //     return {status:false,error:"Unable To logout User"}
-        
-        // return {status:true,data:"Logout"};
-
     })
 })
 
