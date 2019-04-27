@@ -1,0 +1,12 @@
+get end point - for SignUp ={
+    name,
+    email,
+    password
+}
+
+post end point- for login={
+    email,
+    password
+}
+
+
